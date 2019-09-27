@@ -1,0 +1,15 @@
+{
+    "name": "chancegarcia/citrix-right-signature",
+    "description": "php sdk for citrix right signature api (https://api.rightsignature.com/documentation/getting_started)",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^6.3"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "chance garcia",
+            "email": "develop@chancegarcia.com"
+        }
+    ]
+}
