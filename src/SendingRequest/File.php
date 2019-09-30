@@ -29,10 +29,46 @@
  *
  */
 
-namespace Chance\CitrixRightSignature;
+namespace Chance\CitrixRightSignature\SendingRequest;
 
-interface CitrixRightSignatureClientInterface
+// https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
+
+class File implements FileInterface
 {
-    const BASE_URL = 'https://api.rightsignature.com';
+    private $name;
 
+    private $source = 'upload';
+
+    /**
+     * Specify data which should be serialized to JSON
+     * @link https://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    public function jsonSerialize()
+    {
+        // maybe get fancy in the future and use inflector (https://github.com/doctrine/inflector) with reflection to create the array.
+
+        return [
+            'name' => $this->name,
+            'source' => $this->source,
+        ];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param mixed $name
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
 }

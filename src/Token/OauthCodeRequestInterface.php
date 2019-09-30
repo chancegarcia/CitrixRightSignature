@@ -29,10 +29,34 @@
  *
  */
 
-namespace Chance\CitrixRightSignature;
+namespace Chance\CitrixRightSignature\Token;
 
-interface CitrixRightSignatureClientInterface
+interface OauthCodeRequestInterface extends \JsonSerializable
 {
-    const BASE_URL = 'https://api.rightsignature.com';
+    const GRANT_ENDPOINT = '/oauth/authorize';
 
+    const TOKEN_ENDPOINT = '/oauth/token';
+
+    const VALID_GRANT_TYPES = [
+        'grant',
+        'refresh'
+    ];
+
+    const GRANT_TYPES = [
+        'grant' => 'authorization_code',
+        'refresh' => 'refresh_token',
+    ];
+
+    /**
+     * @return array|null
+     */
+    public function toArray();
+
+    /**
+     * @param string $type valid types are grant and refresh; default to grant
+     * @return null|array
+     */
+    public function getFormData($type);
+
+    public function setCode($code);
 }

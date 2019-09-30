@@ -29,10 +29,14 @@
  *
  */
 
-namespace Chance\CitrixRightSignature;
+namespace Chance\CitrixRightSignature\Token;
 
-interface CitrixRightSignatureClientInterface
+interface AccessTokenInterface extends \JsonSerializable
 {
-    const BASE_URL = 'https://api.rightsignature.com';
+    /**
+     * @return mixed
+     */
+    public function getRefreshToken();
 
+    public static function createFromApiResponse(array $accessTokenArray);
 }

@@ -31,12 +31,26 @@
 
 namespace Chance\CitrixRightSignature;
 
+use Chance\CitrixRightSignature\Token\AccessTokenInterface;
+use Chance\CitrixRightSignature\Token\OauthCodeRequest;
+
 class Client implements CitrixRightSignatureClientInterface
 {
     /**
      * @var \GuzzleHttp\Client
      */
     private $guzzleClient;
+
+    /**
+     * @var AccessTokenInterface
+     */
+    private $accessToken;
+
+    private $clientId;
+
+    private $clientSecret;
+
+    private $redirectUri;
 
     /**
      * @return \GuzzleHttp\Client
@@ -53,4 +67,122 @@ class Client implements CitrixRightSignatureClientInterface
     {
         $this->guzzleClient = $guzzleClient;
     }
+
+    /**
+     * @return AccessTokenInterface
+     */
+    public function getAccessToken()
+    {
+        return $this->accessToken;
+    }
+
+    /**
+     * @param AccessTokenInterface $accessToken
+     */
+    public function setAccessToken($accessToken)
+    {
+        $this->accessToken = $accessToken;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getClientId()
+    {
+        return $this->clientId;
+    }
+
+    /**
+     * @param mixed $clientId
+     */
+    public function setClientId($clientId)
+    {
+        $this->clientId = $clientId;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getClientSecret()
+    {
+        return $this->clientSecret;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRedirectUri()
+    {
+        return $this->redirectUri;
+    }
+
+    /**
+     * @param mixed $redirectUri
+     */
+    public function setRedirectUri($redirectUri)
+    {
+        $this->redirectUri = $redirectUri;
+    }
+
+    /**
+     * @param mixed $clientSecret
+     */
+    public function setClientSecret($clientSecret)
+    {
+        $this->clientSecret = $clientSecret;
+    }
+
+    // https://api.rightsignature.com/documentation/resources
+
+    // todo get auth token via GET /oauth/token
+
+    public function getGrantRequestUri()
+    {
+        $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
+
+        $httpBuildQuery = http_build_query($grantRequest->getFormData('grant'));
+
+        return self::BASE_URL . OauthCodeRequest::GRANT_ENDPOINT . '?' . $httpBuildQuery;
+
+    }
+
+    // todo request access token via POST /oauth/token
+
+    /**
+     * @param $code
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function requestAccessToken($code)
+    {
+        /**
+         * curl -F grant_type=authorization_code \
+        -F client_id=CLIENT_ID \
+        -F client_secret=CLIENT_SECRET \
+        -F code=AUTHORIZATION_CODE_FROM_REDIRECT \
+        -F redirect_uri=REDIRECT_URI \
+        -X POST https://api.rightsignature.com/oauth/token
+         */
+        $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
+
+        $grantRequest->setCode($code);
+
+        $uri = self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
+        $formData = $grantRequest->getFormData('access');
+
+        $a = 1;
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => $formData,
+        ]);
+    }
+
+    // todo refresh access token
+
+    // todo revoke token
+
+    // https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
+
+    // todo create sending request (upload)
+
+    // todo trigger RS document stuff via uploaded
 }

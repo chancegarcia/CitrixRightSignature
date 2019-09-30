@@ -31,8 +31,7 @@
 
 namespace Chance\CitrixRightSignature;
 
-interface CitrixRightSignatureClientInterface
+interface SendingRequestInterface extends \JsonSerializable
 {
-    const BASE_URL = 'https://api.rightsignature.com';
 
 }

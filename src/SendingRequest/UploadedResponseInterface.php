@@ -29,10 +29,22 @@
  *
  */
 
-namespace Chance\CitrixRightSignature;
+namespace Chance\CitrixRightSignature\SendingRequest;
 
-interface CitrixRightSignatureClientInterface
+interface UploadedResponseInterface extends \JsonSerializable
 {
-    const BASE_URL = 'https://api.rightsignature.com';
-
+    /*
+     * {
+  "id": SENDING_REQUEST_ID,
+  "status": "waiting_for_file", // "waiting_for_file" | "downloading" | "processing" | "creating_document" | "completed" | "errored"
+}
+     */
+    const VALID_STATUSES = [
+        'waiting_for_file',
+        'downloading',
+        'processing',
+        'creating_document',
+        'completed',
+        'errored',
+    ];
 }
