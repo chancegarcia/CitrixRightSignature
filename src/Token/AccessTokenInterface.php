@@ -36,6 +36,10 @@ interface AccessTokenInterface extends \JsonSerializable
     /**
      * @return mixed
      */
+    public function getAccessToken();
+    /**
+     * @return mixed
+     */
     public function getRefreshToken();
 
     public static function createFromApiResponse(array $accessTokenArray);

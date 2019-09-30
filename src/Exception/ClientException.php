@@ -29,36 +29,47 @@
  *
  */
 
-namespace Chance\CitrixRightSignature\Token;
+namespace Chance\CitrixRightSignature\Exception;
 
-interface OauthCodeRequestInterface extends \JsonSerializable
+use Psr\Http\Message\ResponseInterface;
+
+class ClientException extends \Exception
 {
-    const GRANT_ENDPOINT = '/oauth/authorize';
-
-    const TOKEN_ENDPOINT = '/oauth/token';
-
-    const VALID_GRANT_TYPES = [
-        'grant',
-        'refresh'
-    ];
-
-    const GRANT_TYPES = [
-        'grant' => 'authorization_code',
-        'refresh' => 'refresh_token',
-    ];
+    const UNEXPECTED_STATUS_CODE = 1;
 
     /**
-     * @return array|null
+     * @var ResponseInterface
      */
-    public function toArray();
+    private $response;
 
     /**
-     * @param string $type valid types are grant and refresh; default to grant
-     * @return null|array
+     * @return ResponseInterface
      */
-    public function getFormData($type);
+    public function getResponse()
+    {
+        return $this->response;
+    }
 
-    public function setCode($code);
+    /**
+     * @param ResponseInterface $response
+     */
+    public function setResponse(ResponseInterface $response)
+    {
+        $this->response = $response;
+    }
 
-    public function setGrantType($grantType);
+    /**
+     * @param ResponseInterface $response
+     * @param \Throwable|null $previous
+     * @return ClientException
+     */
+    public static function createUnexpectedStatusCodeException(ResponseInterface $response, \Throwable $previous = null)
+    {
+        $msg = sprintf('unexpected status code (%d) with body: %s', $response->getStatusCode(), $response->getBody());
+
+        $usce = new static($msg, self::UNEXPECTED_STATUS_CODE, $previous);
+        $usce->setResponse($response);
+
+        return $usce;
+    }
 }

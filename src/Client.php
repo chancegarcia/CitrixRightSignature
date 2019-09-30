@@ -31,8 +31,11 @@
 
 namespace Chance\CitrixRightSignature;
 
+use Chance\CitrixRightSignature\Exception\ClientException;
+use Chance\CitrixRightSignature\Token\AccessToken;
 use Chance\CitrixRightSignature\Token\AccessTokenInterface;
 use Chance\CitrixRightSignature\Token\OauthCodeRequest;
+use Symfony\Component\HttpFoundation\Response;
 
 class Client implements CitrixRightSignatureClientInterface
 {
@@ -134,8 +137,9 @@ class Client implements CitrixRightSignatureClientInterface
 
     // https://api.rightsignature.com/documentation/resources
 
-    // todo get auth token via GET /oauth/token
-
+    /**
+     * @return string uri to redirect to request a auth code
+     */
     public function getGrantRequestUri()
     {
         $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
@@ -146,9 +150,9 @@ class Client implements CitrixRightSignatureClientInterface
 
     }
 
-    // todo request access token via POST /oauth/token
-
     /**
+     * using a auth code, make a request to get an access token
+     *
      * @param $code
      * @return \Psr\Http\Message\ResponseInterface
      */
@@ -166,10 +170,8 @@ class Client implements CitrixRightSignatureClientInterface
 
         $grantRequest->setCode($code);
 
-        $uri = self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
+        $uri = $this->getFullTokenUri();
         $formData = $grantRequest->getFormData('access');
-
-        $a = 1;
 
         return $this->guzzleClient->post($uri, [
             'form_params' => $formData,
@@ -177,6 +179,53 @@ class Client implements CitrixRightSignatureClientInterface
     }
 
     // todo refresh access token
+    public function requestRefreshToken(AccessTokenInterface $accessToken)
+    {
+        $uri = $this-$this->getFullTokenUri();
+
+        $refreshRequest = OauthCodeRequest::createRefreshRequest($this->clientId, $this->clientSecret, $accessToken);
+        $refreshRequest->setGrantType('refresh');
+
+        $formData = $refreshRequest->getFormData('refresh');
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => $formData,
+        ]);
+    }
+
+    /**
+     * convenience function to request a refreshed access token, set the returned token to the client and return the token for any further manipulation
+     *
+     * @return AccessTokenInterface
+     * @throws ClientException
+     */
+    public function refreshAccessToken()
+    {
+        $response = $this->requestRefreshToken($this->accessToken);
+
+        switch ($response->getStatusCode()) {
+            case Response::HTTP_FORBIDDEN:
+                break;
+            case Response::HTTP_OK:
+                $body = $response->getBody();
+                $responseArray = json_decode($body, true);
+                $accessToken = AccessToken::createFromApiResponse($responseArray);
+                $this->accessToken = $accessToken;
+                return $accessToken;
+                break;
+            default:
+                throw ClientException::createUnexpectedStatusCodeException($response);
+                break;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullTokenUri()
+    {
+        return self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
+    }
 
     // todo revoke token
 

@@ -200,7 +200,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
      */
     public function setGrantType($grantType)
     {
-        if (in_array(self::VALID_GRANT_TYPES, $grantType)) {
+        if (in_array($grantType, self::VALID_GRANT_TYPES)) {
             $this->grantType = $grantType;
         }
     }
