@@ -182,7 +182,7 @@ class AccessToken implements AccessTokenInterface
   }
          */
 
-        $token = new static();
+        $token = static::generateNewInstance();
         $token->setAccessToken($accessTokenArray['access_token']);
         $token->setTokenType($accessTokenArray['token_type']);
         $token->setExpiresIn($accessTokenArray['expires_in']);
@@ -191,5 +191,13 @@ class AccessToken implements AccessTokenInterface
         $token->setCreatedAt($accessTokenArray['created_at']);
 
         return $token;
+    }
+
+    /**
+     * @return AccessTokenInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
     }
 }
