@@ -37,6 +37,8 @@ interface OauthCodeRequestInterface extends \JsonSerializable
 
     const TOKEN_ENDPOINT = '/oauth/token';
 
+    const REVOKE_ENDPOINT = '/oauth/revoke';
+
     const VALID_GRANT_TYPES = [
         'grant',
         'refresh'

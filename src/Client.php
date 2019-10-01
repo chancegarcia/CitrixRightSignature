@@ -139,9 +139,12 @@ class Client implements CitrixRightSignatureClientInterface
 
     /**
      * @return string uri to redirect to request a auth code
+     * @throws ClientException
      */
     public function getGrantRequestUri()
     {
+        $this->validateClientGrantState();
+
         $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
 
         $httpBuildQuery = http_build_query($grantRequest->getFormData('grant'));
@@ -155,9 +158,11 @@ class Client implements CitrixRightSignatureClientInterface
      *
      * @param $code
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
      */
     public function requestAccessToken($code)
     {
+        $this->validateClientGrantState();
         /**
          * curl -F grant_type=authorization_code \
         -F client_id=CLIENT_ID \
@@ -178,9 +183,15 @@ class Client implements CitrixRightSignatureClientInterface
         ]);
     }
 
-    // todo refresh access token
+    /**
+     * @param AccessTokenInterface $accessToken
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
     public function requestRefreshToken(AccessTokenInterface $accessToken)
     {
+        $this->validateClientBaseState();
+
         $uri = $this-$this->getFullTokenUri();
 
         $refreshRequest = OauthCodeRequest::createRefreshRequest($this->clientId, $this->clientSecret, $accessToken);
@@ -201,6 +212,8 @@ class Client implements CitrixRightSignatureClientInterface
      */
     public function refreshAccessToken()
     {
+        $this->validateClientAccessState();
+
         $response = $this->requestRefreshToken($this->accessToken);
 
         switch ($response->getStatusCode()) {
@@ -227,7 +240,108 @@ class Client implements CitrixRightSignatureClientInterface
         return self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
     }
 
+    /**
+     * @return string
+     */
+    public function getFullRevokeTokenUri()
+    {
+        return self::BASE_URL . OauthCodeRequest::REVOKE_ENDPOINT;
+    }
+
     // todo revoke token
+
+    /**
+     * @param AccessTokenInterface $accessToken
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function requestRevokeToken(AccessTokenInterface $accessToken)
+    {
+        $this->validateClientBaseState();
+
+        $uri = $this->getFullRevokeTokenUri();
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => [
+                'token' => $accessToken->getAccessToken(),
+            ],
+            'auth' => [
+                $this->clientId,
+                $this->clientSecret,
+            ],
+        ]);
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function revokeAccessToken()
+    {
+        $this->validateClientAccessState();
+
+        $response = $this->requestRevokeToken($this->accessToken);
+
+        switch ($response->getStatusCode()) {
+            case Response::HTTP_FORBIDDEN:
+                throw ClientException::createUnauthorizedException($response);
+                break;
+            case Response::HTTP_OK:
+                $this->accessToken = null;
+                return true;
+                break;
+            default:
+                throw ClientException::createUnexpectedStatusCodeException($response);
+                break;
+        }
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientAccessState()
+    {
+        $this->validateClientBaseState();
+
+        if (!$this->accessToken instanceof AccessTokenInterface) {
+            throw ClientException::createMissingAccessTokenException();
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientBaseState()
+    {
+        if (!is_string($this->clientId)) {
+            throw ClientException::createMissingClientIdException();
+        }
+
+        if (!is_string($this->clientSecret)) {
+            throw ClientException::createMissingClientSecretException();
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientGrantState()
+    {
+        $this->validateClientBaseState();
+
+        if (!is_string($this->redirectUri)) {
+            throw ClientException::createMissingRedirectException();
+        }
+
+        return true;
+    }
 
     // https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
 

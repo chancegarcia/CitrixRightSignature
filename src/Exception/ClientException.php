@@ -37,6 +37,13 @@ class ClientException extends \Exception
 {
     const UNEXPECTED_STATUS_CODE = 1;
 
+    const MISSING_CLIENT_ID = 2;
+    const MISSING_CLIENT_SECRET = 3;
+    const MISSING_ACCESS_TOKEN = 4;
+    const MISSING_REDIRECT_URI = 5;
+
+    const UNAUTHORIZED = 6;
+
     /**
      * @var ResponseInterface
      */
@@ -71,5 +78,48 @@ class ClientException extends \Exception
         $usce->setResponse($response);
 
         return $usce;
+    }
+
+    /**
+     * @param ResponseInterface $response
+     * @param \Throwable|null $previous
+     * @return ClientException
+     */
+    public static function createUnauthorizedException(ResponseInterface $response, \Throwable $previous = null)
+    {
+        $msg = sprintf('requested action is forbidden (OAuth2 Error); please access the response property of this exception for more details.');
+
+        $usce = new static($msg, self::UNEXPECTED_STATUS_CODE, $previous);
+        $usce->setResponse($response);
+
+        return $usce;
+    }
+
+    public static function createMissingClientIdException(\Throwable $previous = null)
+    {
+        $msg = sprintf('clientId value must be set in order to use this client');
+
+        return new static($msg, self::MISSING_CLIENT_ID, $previous);
+    }
+
+    public static function createMissingClientSecretException(\Throwable $previous = null)
+    {
+        $msg = sprintf('clientSecret value must be set in order to use this client');
+
+        return new static($msg, self::MISSING_CLIENT_SECRET, $previous);
+    }
+
+    public static function createMissingAccessTokenException(\Throwable $previous = null)
+    {
+        $msg = sprintf('accessToken value must be set in order to use this client');
+
+        return new static($msg, self::MISSING_ACCESS_TOKEN, $previous);
+    }
+
+    public static function createMissingRedirectException(\Throwable $previous = null)
+    {
+        $msg = sprintf('redirectUri value must be set in order to use this client');
+
+        return new static($msg, self::MISSING_REDIRECT_URI, $previous);
     }
 }
