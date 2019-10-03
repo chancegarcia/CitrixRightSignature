@@ -33,5 +33,43 @@ namespace Chance\CitrixRightSignature\SendingRequest;
 
 interface DocumentInterface extends \JsonSerializable
 {
+    /**
+     * @return bool
+     */
+    public function isSignerSequencing();
 
+    /**
+     * @param bool $signerSequencing
+     */
+    public function setSignerSequencing($signerSequencing);
+
+    /**
+     * @return int
+     */
+    public function getExpiresIn();
+
+    /**
+     * @param int $expiresIn
+     */
+    public function setExpiresIn($expiresIn);
+
+    /**
+     * @return mixed
+     */
+    public function getName();
+
+    /**
+     * @param mixed $name
+     */
+    public function setName($name);
+
+    /**
+     * @return RoleInterface[]
+     */
+    public function getRoles();
+
+    /**
+     * @param RoleInterface[] $roles
+     */
+    public function setRoles(array $roles);
 }

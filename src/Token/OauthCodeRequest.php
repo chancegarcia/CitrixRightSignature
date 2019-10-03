@@ -59,6 +59,14 @@ class OauthCodeRequest implements OauthCodeRequestInterface
     private $scope = 'read write';
 
     /**
+     * @return OauthCodeRequestInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
      * Specify data which should be serialized to JSON
      * @link https://php.net/manual/en/jsonserializable.jsonserialize.php
      * @return mixed data which can be serialized by <b>json_encode</b>,
@@ -79,14 +87,6 @@ class OauthCodeRequest implements OauthCodeRequestInterface
     }
 
     /**
-     * @return array|null
-     */
-    public function toArray()
-    {
-        return json_decode(json_encode($this), true);
-    }
-
-    /**
      * @param string $type valid types are grant and refresh; default to grant
      * @return null|array
      */
@@ -94,7 +94,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
     {
         switch ($type) {
             case 'refresh':
-                $oauth = $this->toArray();
+                $oauth = $this->jsonSerialize();
                 if (is_array($oauth)) {
                     unset($oauth['code'], $oauth['redirect_uri'], $oauth['scope']);
                     if ($this->accessToken instanceof AccessTokenInterface) {
@@ -108,7 +108,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
                 return null;
                 break;
             case 'access':
-                $oauth = $this->toArray();
+                $oauth = $this->jsonSerialize();
                 if (is_array($oauth)) {
                     unset($oauth['scope']);
                     return $oauth;
@@ -118,7 +118,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
             case 'grant':
                 // no break
             default:
-                return $this->toArray();
+                return $this->jsonSerialize();
                 break;
         }
     }
@@ -245,7 +245,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
      */
     public static function createAuthRequest($clientId, $clientSecret, $redirectUri)
     {
-        $request = new static();
+        $request = static::generateNewInstance();
         $request->setClientId($clientId);
         $request->setClientSecret($clientSecret);
         $request->setRedirectUri($redirectUri);
@@ -255,7 +255,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
 
     public static function createAccessRequest($clientId, $clientSecret, $redirectUri, $code)
     {
-        $request = new static();
+        $request = static::generateNewInstance();
         $request->setClientId($clientId);
         $request->setClientSecret($clientSecret);
         $request->setRedirectUri($redirectUri);
@@ -270,7 +270,7 @@ class OauthCodeRequest implements OauthCodeRequestInterface
      */
     public static function createRefreshRequest($clientId, $clientSecret, AccessTokenInterface $accessToken = null)
     {
-        $request = new static();
+        $request = self::generateNewInstance();
         $request->setClientId($clientId);
         $request->setClientSecret($clientSecret);
         if ($accessToken instanceof AccessTokenInterface) {

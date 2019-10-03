@@ -31,7 +31,21 @@
 
 namespace Chance\CitrixRightSignature;
 
+use Chance\CitrixRightSignature\SendingRequest\DocumentInterface;
+use Chance\CitrixRightSignature\SendingRequest\FileInterface;
+
 interface OneOffDocumentRequestInterface extends \JsonSerializable
 {
     const BASE_ENDPOINT = '/public/v1/sending_requests';
+    const UPLOADED_ENDPOINT = self::BASE_ENDPOINT . '/:id/uploaded';
+
+    /**
+     * @param FileInterface $file
+     */
+    public function setFile(FileInterface $file);
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function setDocument(DocumentInterface $document);
 }

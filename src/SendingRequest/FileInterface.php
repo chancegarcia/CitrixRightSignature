@@ -33,5 +33,8 @@ namespace Chance\CitrixRightSignature\SendingRequest;
 
 interface FileInterface extends \JsonSerializable
 {
-
+    /**
+     * @param mixed $name
+     */
+    public function setName($name);
 }

@@ -205,4 +205,30 @@ class SendingRequest implements SendingRequestInterface
     {
         $this->updatedAt = $updatedAt;
     }
+
+    /**
+     * @return SendingRequestInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
+     * @param array $sendingRequestArray
+     * @return SendingRequestInterface
+     */
+    public static function createFromApiResponse(array $sendingRequestArray)
+    {
+        $sendingRequest = static::generateNewInstance();
+        $sendingRequest->setId($sendingRequestArray['id']);
+        $sendingRequest->setStatus($sendingRequestArray['status']);
+        $sendingRequest->setStatusMessage($sendingRequestArray['status_message']);
+        $sendingRequest->setUploadUrl($sendingRequestArray['upload_url']);
+        $sendingRequest->setDocumentTemplateId($sendingRequestArray['document_template_id']);
+        $sendingRequest->setCreatedAt($sendingRequestArray['created_at']);
+        $sendingRequest->setUpdatedAt($sendingRequestArray['updated_at']);
+
+        return $sendingRequest;
+    }
 }

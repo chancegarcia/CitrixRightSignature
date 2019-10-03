@@ -129,4 +129,26 @@ class Document implements DocumentInterface
         // todo validate roles
         $this->roles = $roles;
     }
+
+    /**
+     * @return DocumentInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
+     * @param $name
+     * @param array $roles
+     * @return DocumentInterface
+     */
+    public static function createNewDocument($name, array $roles)
+    {
+        $doc = static::generateNewInstance();
+        $doc->setName($name);
+        $doc->setRoles($roles);
+
+        return $doc;
+    }
 }

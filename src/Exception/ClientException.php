@@ -44,6 +44,8 @@ class ClientException extends \Exception
 
     const UNAUTHORIZED = 6;
 
+    const FILE_NOT_FOUND = 7;
+
     /**
      * @var ResponseInterface
      */
@@ -121,5 +123,12 @@ class ClientException extends \Exception
         $msg = sprintf('redirectUri value must be set in order to use this client');
 
         return new static($msg, self::MISSING_REDIRECT_URI, $previous);
+    }
+
+    public static function createFileNotFoundException($filePath, \Throwable $previous = null)
+    {
+        $msg = sprintf('unable to find file (%s)', $filePath);
+
+        return new static($msg, self::FILE_NOT_FOUND, $previous);
     }
 }

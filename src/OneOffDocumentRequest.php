@@ -33,13 +33,13 @@ namespace Chance\CitrixRightSignature;
 
 // https://api.rightsignature.com/documentation/resources/v1/sending_requests/uploaded.en.html
 
-use BlueBurro\DocumentAssembly\CoreBundle\Model\Entity\FieldInterface;
 use Chance\CitrixRightSignature\SendingRequest\DocumentInterface;
+use Chance\CitrixRightSignature\SendingRequest\FileInterface;
 
 class OneOffDocumentRequest implements OneOffDocumentRequestInterface
 {
     /**
-     * @var FieldInterface
+     * @var FileInterface
      */
     private $file;
 
@@ -52,6 +52,38 @@ class OneOffDocumentRequest implements OneOffDocumentRequestInterface
      * @var SendingRequestInterface
      */
     private $sendingRequest;
+
+    /**
+     * @return FileInterface
+     */
+    public function getFile()
+    {
+        return $this->file;
+    }
+
+    /**
+     * @param FileInterface $file
+     */
+    public function setFile(FileInterface $file)
+    {
+        $this->file = $file;
+    }
+
+    /**
+     * @return DocumentInterface
+     */
+    public function getDocument()
+    {
+        return $this->document;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function setDocument(DocumentInterface $document)
+    {
+        $this->document = $document;
+    }
 
     /*
      * {
@@ -93,5 +125,22 @@ class OneOffDocumentRequest implements OneOffDocumentRequestInterface
             'document'  => json_encode($this->document),
             'sendingRequest' => $encodedSendingRequest,
         ];
+    }
+
+    public static function createOneOffDocumentRequest(FileInterface $file, DocumentInterface $document)
+    {
+        $oneOffDocument = static::generateNewInstance();
+        $oneOffDocument->setFile($file);
+        $oneOffDocument->setDocument($document);
+
+        return $oneOffDocument;
+    }
+
+    /**
+     * @return OneOffDocumentRequestInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
     }
 }

@@ -347,5 +347,118 @@ class Client implements CitrixRightSignatureClientInterface
 
     // todo create sending request (upload)
 
+    /**
+     * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function requestUploadUri(OneOffDocumentRequestInterface $oneOffDocumentRequest)
+    {
+        $this->validateClientAccessState();
+
+        $uri= OneOffDocumentRequest::BASE_ENDPOINT;
+        $formData = $oneOffDocumentRequest->jsonSerialize();
+
+        $z = 1;
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => $formData,
+        ]);
+    }
+
+    /**
+     * @param SendingRequestInterface $sendingRequest
+     * @param $filePath
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function requestUpload(SendingRequestInterface $sendingRequest, $filePath)
+    {
+        $this->validateClientAccessState();
+        $this->validateFile($filePath);
+
+        // PUT the file into sendingRequest's uploadUri value
+        $uri = $sendingRequest->getUploadUrl();
+
+        return $this->guzzleClient->put($uri,[
+            'multipart' => [
+                [
+                    'name' => 'file',
+                    'contents' => file_get_contents($filePath),
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * @param $filePath
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateFile($filePath)
+    {
+        if (!is_file($filePath)) {
+            throw ClientException::createFileNotFoundException($filePath);
+        }
+
+        return true;
+    }
+
     // todo trigger RS document stuff via uploaded
+
+    /**
+     * @param SendingRequestInterface $sendingRequest
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function requestUploadedRequest(SendingRequestInterface $sendingRequest)
+    {
+        $uri = str_replace(':id', $sendingRequest->getId(), OneOffDocumentRequest::UPLOADED_ENDPOINT);
+
+        return $this->guzzleClient->post($uri);
+    }
+
+    /**
+     * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
+     * @param $filePath
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath)
+    {
+        $uploadRequestResponse = $this->requestUploadUri($oneOffDocumentRequest);
+
+        switch (($uploadRequestResponse->getStatusCode())) {
+            case Response::HTTP_BAD_REQUEST:
+                // todo throw exception
+                break;
+            case Response::HTTP_UNAUTHORIZED:
+                // todo throw exception
+                break;
+            case Response::HTTP_UNPROCESSABLE_ENTITY:
+                // todo throw exception
+                break;
+            case Response::HTTP_NOT_FOUND:
+                // todo throw exception
+                break;
+            case Response::HTTP_OK:
+                // no break
+            default:
+                $body = $uploadRequestResponse->getBody();
+                $aSendingRequest = json_decode($body, true);
+
+                $sendingRequest = SendingRequest::createFromApiResponse($aSendingRequest);
+
+                // request uploaded triger using sending request response
+                $putFileResponse = $this->requestUpload($sendingRequest, $filePath);
+                // todo handle put file response
+                switch ($putFileResponse->getStatusCode()) {
+                    default:
+                        break;
+                }
+
+                // finally, trigger the uploaded stuff as documented by API resources
+                return $this->requestUploadedRequest($sendingRequest);
+                break;
+        }
+    }
 }

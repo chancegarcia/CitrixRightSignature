@@ -71,4 +71,24 @@ class File implements FileInterface
     {
         $this->name = $name;
     }
+
+    /**
+     * @return FileInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
+     * @param string $name
+     * @return FileInterface
+     */
+    public static function createNewFile($name)
+    {
+        $file = static::generateNewInstance();
+        $file->setName($name);
+
+        return $file;
+    }
 }
