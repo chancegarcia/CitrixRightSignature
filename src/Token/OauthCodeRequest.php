@@ -47,9 +47,9 @@ class OauthCodeRequest implements OauthCodeRequestInterface
     private $code;
 
     /**
-     * @var string valid types are: 'grant', 'refresh'
+     * @var string valid types are: 'access', 'refresh'
      */
-    private $grantType = 'grant';
+    private $grantType = 'access';
 
     /**
      * @var AccessTokenInterface
@@ -57,6 +57,8 @@ class OauthCodeRequest implements OauthCodeRequestInterface
     private $accessToken;
 
     private $scope = 'read write';
+
+    private $responseType = 'code';
 
     /**
      * @return OauthCodeRequestInterface
@@ -83,44 +85,43 @@ class OauthCodeRequest implements OauthCodeRequestInterface
             'redirect_uri' => $this->redirectUri,
             'code' => $this->code,
             'scope' => $this->scope,
+            'response_type' => $this->responseType,
         ];
     }
 
     /**
-     * @param string $type valid types are grant and refresh; default to grant
+     * @param string $type valid types are auth, access and refresh; default to access
      * @return null|array
      */
     public function getFormData($type)
     {
         switch ($type) {
             case 'refresh':
-                $oauth = $this->jsonSerialize();
-                if (is_array($oauth)) {
-                    unset($oauth['code'], $oauth['redirect_uri'], $oauth['scope']);
+                $formDataArray = $this->jsonSerialize();
+                if (is_array($formDataArray)) {
+                    unset($formDataArray['code'], $formDataArray['redirect_uri'], $formDataArray['scope'], $formDataArray['response_type']);
                     if ($this->accessToken instanceof AccessTokenInterface) {
-                        $oauth['refresh_token'] = $this->accessToken->getRefreshToken();
-
-                        return $oauth;
+                        $formDataArray['refresh_token'] = $this->accessToken->getRefreshToken();
                     }
-
-                    return null;
                 }
-                return null;
                 break;
             case 'access':
-                $oauth = $this->jsonSerialize();
-                if (is_array($oauth)) {
-                    unset($oauth['scope']);
-                    return $oauth;
+                $formDataArray = $this->jsonSerialize();
+                if (is_array($formDataArray)) {
+                    unset($formDataArray['scope'], $formDataArray['response_type']);
                 }
-                return null;
                 break;
-            case 'grant':
+            case 'auth':
                 // no break
+                $formDataArray = $this->jsonSerialize();
+                unset($formDataArray['code'], $formDataArray['grant_type'], $formDataArray['client_secret']);
+                break;
             default:
-                return $this->jsonSerialize();
+                $formDataArray = $this->jsonSerialize();
                 break;
         }
+
+        return $formDataArray;
     }
 
     /**

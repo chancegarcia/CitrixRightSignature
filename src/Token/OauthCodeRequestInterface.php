@@ -40,12 +40,12 @@ interface OauthCodeRequestInterface extends \JsonSerializable
     const REVOKE_ENDPOINT = '/oauth/revoke';
 
     const VALID_GRANT_TYPES = [
-        'grant',
-        'refresh'
+        'access',
+        'refresh',
     ];
 
     const GRANT_TYPES = [
-        'grant' => 'authorization_code',
+        'access' => 'authorization_code',
         'refresh' => 'refresh_token',
     ];
 

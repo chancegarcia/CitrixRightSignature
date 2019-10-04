@@ -137,6 +137,17 @@ class Client implements CitrixRightSignatureClientInterface
 
     // https://api.rightsignature.com/documentation/resources
 
+    public function getAuthCodeRequestUri()
+    {
+        $this->validateClientGrantState();
+
+        $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
+
+        $httpBuildQuery = http_build_query($grantRequest->getFormData('auth'));
+
+        return self::BASE_URL . OauthCodeRequest::GRANT_ENDPOINT . '?' . $httpBuildQuery;
+    }
+
     /**
      * @return string uri to redirect to request a auth code
      * @throws ClientException
