@@ -67,6 +67,15 @@ class AccessToken implements AccessTokenInterface
     "created_at":    1569565521
   }
          */
+
+        return [
+            'access_token' => $this->accessToken,
+            'token_type' => $this->tokenType,
+            'expires_in' => $this->expiresIn,
+            'refresh_token' => $this->refreshToken,
+            'scope' => $this->scope,
+            'created_at' => $this->createdAt,
+        ];
     }
 
     /**
