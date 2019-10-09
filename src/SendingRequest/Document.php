@@ -61,7 +61,7 @@ class Document implements DocumentInterface
             'signer_sequencing' => $this->signerSequencing,
             'expires_in' => $this->expiresIn,
             'name' => $this->name,
-            'roles' => json_encode($this->roles),
+            'roles' => json_decode(json_encode($this->roles), true),
         ];
     }
 

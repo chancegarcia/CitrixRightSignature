@@ -137,6 +137,10 @@ class Client implements CitrixRightSignatureClientInterface
 
     // https://api.rightsignature.com/documentation/resources
 
+    /**
+     * @return string
+     * @throws ClientException
+     */
     public function getAuthCodeRequestUri()
     {
         $this->validateClientGrantState();
@@ -190,7 +194,7 @@ class Client implements CitrixRightSignatureClientInterface
         $formData = $grantRequest->getFormData('access');
 
         return $this->guzzleClient->post($uri, [
-            'form_params' => $formData,
+            'json' => $formData,
         ]);
     }
 
@@ -203,7 +207,7 @@ class Client implements CitrixRightSignatureClientInterface
     {
         $this->validateClientBaseState();
 
-        $uri = $this-$this->getFullTokenUri();
+        $uri = $this->getFullTokenUri();
 
         $refreshRequest = OauthCodeRequest::createRefreshRequest($this->clientId, $this->clientSecret, $accessToken);
         $refreshRequest->setGrantType('refresh');
@@ -211,7 +215,7 @@ class Client implements CitrixRightSignatureClientInterface
         $formData = $refreshRequest->getFormData('refresh');
 
         return $this->guzzleClient->post($uri, [
-            'form_params' => $formData,
+            'json' => $formData,
         ]);
     }
 
@@ -273,7 +277,7 @@ class Client implements CitrixRightSignatureClientInterface
         $uri = $this->getFullRevokeTokenUri();
 
         return $this->guzzleClient->post($uri, [
-            'form_params' => [
+            'json' => [
                 'token' => $accessToken->getAccessToken(),
             ],
             'auth' => [
@@ -362,18 +366,20 @@ class Client implements CitrixRightSignatureClientInterface
      * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
+     * @throws \GuzzleHttp\Exception\ClientException
      */
     public function requestUploadUri(OneOffDocumentRequestInterface $oneOffDocumentRequest)
     {
         $this->validateClientAccessState();
 
-        $uri= OneOffDocumentRequest::BASE_ENDPOINT;
+        $uri = self::BASE_URL . OneOffDocumentRequest::BASE_ENDPOINT;
         $formData = $oneOffDocumentRequest->jsonSerialize();
 
-        $z = 1;
+        // json seems to work so access_token doesn't need to be sent as form_params
+        $formData['access_token'] = $this->accessToken->getAccessToken();
 
         return $this->guzzleClient->post($uri, [
-            'form_params' => $formData,
+            'json' => $formData,
         ]);
     }
 
@@ -388,14 +394,21 @@ class Client implements CitrixRightSignatureClientInterface
         $this->validateClientAccessState();
         $this->validateFile($filePath);
 
+        $fileName = pathinfo($filePath, PATHINFO_BASENAME);
+
         // PUT the file into sendingRequest's uploadUri value
         $uri = $sendingRequest->getUploadUrl();
 
+        // upload is to amazon and they have a key/sig already in the uploadUri so no access key needs to be sent with this request
         return $this->guzzleClient->put($uri,[
             'multipart' => [
                 [
                     'name' => 'file',
                     'contents' => file_get_contents($filePath),
+                    'filename' => $fileName,
+                    'headers' => [
+                        'Content-Type' => 'application/pdf',
+                    ]
                 ],
             ]
         ]);
@@ -423,9 +436,15 @@ class Client implements CitrixRightSignatureClientInterface
      */
     public function requestUploadedRequest(SendingRequestInterface $sendingRequest)
     {
-        $uri = str_replace(':id', $sendingRequest->getId(), OneOffDocumentRequest::UPLOADED_ENDPOINT);
+        $uriPath = str_replace(':id', $sendingRequest->getId(), OneOffDocumentRequest::UPLOADED_ENDPOINT);
 
-        return $this->guzzleClient->post($uri);
+        $uri = self::BASE_URL . $uriPath;
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => [
+                'access_token' => $this->accessToken->getAccessToken(),
+            ],
+        ]);
     }
 
     /**
@@ -433,6 +452,7 @@ class Client implements CitrixRightSignatureClientInterface
      * @param $filePath
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
+     * @throws \GuzzleHttp\Exception\ClientException
      */
     public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath)
     {
@@ -457,14 +477,19 @@ class Client implements CitrixRightSignatureClientInterface
                 $body = $uploadRequestResponse->getBody();
                 $aSendingRequest = json_decode($body, true);
 
-                $sendingRequest = SendingRequest::createFromApiResponse($aSendingRequest);
+                // see https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
+                $sendingRequest = SendingRequest::createFromApiResponse($aSendingRequest['sending_request']);
 
                 // request uploaded triger using sending request response
                 $putFileResponse = $this->requestUpload($sendingRequest, $filePath);
                 // todo handle put file response
                 switch ($putFileResponse->getStatusCode()) {
+                    case Response::HTTP_OK:
+                        // no break
                     default:
-                        break;
+                        $body = $putFileResponse->getBody();
+                        $contents = $body->getContents();
+                    break;
                 }
 
                 // finally, trigger the uploaded stuff as documented by API resources
