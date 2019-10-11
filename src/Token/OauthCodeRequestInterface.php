@@ -37,20 +37,17 @@ interface OauthCodeRequestInterface extends \JsonSerializable
 
     const TOKEN_ENDPOINT = '/oauth/token';
 
+    const REVOKE_ENDPOINT = '/oauth/revoke';
+
     const VALID_GRANT_TYPES = [
-        'grant',
-        'refresh'
+        'access',
+        'refresh',
     ];
 
     const GRANT_TYPES = [
-        'grant' => 'authorization_code',
+        'access' => 'authorization_code',
         'refresh' => 'refresh_token',
     ];
-
-    /**
-     * @return array|null
-     */
-    public function toArray();
 
     /**
      * @param string $type valid types are grant and refresh; default to grant
@@ -58,5 +55,73 @@ interface OauthCodeRequestInterface extends \JsonSerializable
      */
     public function getFormData($type);
 
+    /**
+     * @return mixed
+     */
+    public function getClientId();
+
+    /**
+     * @param mixed $clientId
+     */
+    public function setClientId($clientId);
+
+    /**
+     * @return mixed
+     */
+    public function getClientSecret();
+
+    /**
+     * @param mixed $clientSecret
+     */
+    public function setClientSecret($clientSecret);
+
+    /**
+     * @return mixed
+     */
+    public function getRedirectUri();
+
+    /**
+     * @param mixed $redirectUri
+     */
+    public function setRedirectUri($redirectUri);
+
+    /**
+     * @return mixed
+     */
+    public function getCode();
+
+    /**
+     * @param $code
+     */
     public function setCode($code);
+
+    /**
+     * @return mixed
+     */
+    public function getGrantType();
+
+    /**
+     * @param $grantType
+     */
+    public function setGrantType($grantType);
+
+    /**
+     * @return AccessTokenInterface
+     */
+    public function getAccessToken();
+
+    /**
+     * @param AccessTokenInterface $accessToken
+     */
+    public function setAccessToken(AccessTokenInterface $accessToken);
+
+    /**
+     * @return string
+     */
+    public function getScope();
+
+    /**
+     * @param string $scope
+     */
+    public function setScope($scope);
 }

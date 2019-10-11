@@ -36,7 +36,70 @@ interface AccessTokenInterface extends \JsonSerializable
     /**
      * @return mixed
      */
+    public function getAccessToken();
+    /**
+     * @return mixed
+     */
     public function getRefreshToken();
 
+    /**
+     * @param array $accessTokenArray
+     * @return AccessTokenInterface
+     */
     public static function createFromApiResponse(array $accessTokenArray);
+
+    /**
+     * @return AccessTokenInterface
+     */
+    public static function generateNewInstance();
+
+    /**
+     * @param mixed $accessToken
+     */
+    public function setAccessToken($accessToken);
+
+    /**
+     * @return mixed
+     */
+    public function getTokenType();
+
+    /**
+     * @param mixed $tokenType
+     */
+    public function setTokenType($tokenType);
+
+    /**
+     * @param mixed $refreshToken
+     */
+    public function setRefreshToken($refreshToken);
+
+    /**
+     * @return mixed
+     */
+    public function getExpiresIn();
+
+    /**
+     * @param mixed $expiresIn
+     */
+    public function setExpiresIn($expiresIn);
+
+    /**
+     * @return mixed
+     */
+    public function getScope();
+
+    /**
+     * @param mixed $scope
+     */
+    public function setScope($scope);
+
+    /**
+     * @return mixed
+     */
+    public function getCreatedAt();
+
+    /**
+     * @param mixed $createdAt
+     */
+    public function setCreatedAt($createdAt);
 }

@@ -106,4 +106,28 @@ class Role implements RoleInterface
     {
         $this->signerEmail = $signerEmail;
     }
+
+    /**
+     * @return RoleInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
+     * @param string $name
+     * @param string $signerName
+     * @param string $signerEmail
+     * @return RoleInterface
+     */
+    public static function createNewRole($name, $signerName, $signerEmail)
+    {
+        $role = static::generateNewInstance();
+        $role->setName($name);
+        $role->setSignerName($signerName);
+        $role->setSignerEmail($signerEmail);
+
+        return $role;
+    }
 }

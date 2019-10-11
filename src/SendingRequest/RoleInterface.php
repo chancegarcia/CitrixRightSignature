@@ -33,5 +33,33 @@ namespace Chance\CitrixRightSignature\SendingRequest;
 
 interface RoleInterface extends \JsonSerializable
 {
+    /**
+     * @return mixed
+     */
+    public function getName();
 
+    /**
+     * @param mixed $name
+     */
+    public function setName($name);
+
+    /**
+     * @return mixed
+     */
+    public function getSignerName();
+
+    /**
+     * @param mixed $signerName
+     */
+    public function setSignerName($signerName);
+
+    /**
+     * @return mixed
+     */
+    public function getSignerEmail();
+
+    /**
+     * @param mixed $signerEmail
+     */
+    public function setSignerEmail($signerEmail);
 }

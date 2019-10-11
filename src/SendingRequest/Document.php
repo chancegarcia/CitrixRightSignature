@@ -61,7 +61,7 @@ class Document implements DocumentInterface
             'signer_sequencing' => $this->signerSequencing,
             'expires_in' => $this->expiresIn,
             'name' => $this->name,
-            'roles' => json_encode($this->roles),
+            'roles' => json_decode(json_encode($this->roles), true),
         ];
     }
 
@@ -128,5 +128,27 @@ class Document implements DocumentInterface
     {
         // todo validate roles
         $this->roles = $roles;
+    }
+
+    /**
+     * @return DocumentInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
+    }
+
+    /**
+     * @param $name
+     * @param array $roles
+     * @return DocumentInterface
+     */
+    public static function createNewDocument($name, array $roles)
+    {
+        $doc = static::generateNewInstance();
+        $doc->setName($name);
+        $doc->setRoles($roles);
+
+        return $doc;
     }
 }

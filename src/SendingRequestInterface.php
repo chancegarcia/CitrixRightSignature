@@ -33,5 +33,73 @@ namespace Chance\CitrixRightSignature;
 
 interface SendingRequestInterface extends \JsonSerializable
 {
+    /**
+     * @return mixed
+     */
+    public function getId();
 
+    /**
+     * @param mixed $id
+     */
+    public function setId($id);
+
+    /**
+     * @return mixed
+     */
+    public function getStatus();
+
+    /**
+     * @param mixed $status
+     */
+    public function setStatus($status);
+
+    /**
+     * @return mixed
+     */
+    public function getStatusMessage();
+
+    /**
+     * @param mixed $statusMessage
+     */
+    public function setStatusMessage($statusMessage);
+
+    /**
+     * @return mixed
+     */
+    public function getUploadUrl();
+
+    /**
+     * @param mixed $uploadUrl
+     */
+    public function setUploadUrl($uploadUrl);
+
+    /**
+     * @return mixed
+     */
+    public function getDocumentTemplateId();
+
+    /**
+     * @param mixed $documentTemplateId
+     */
+    public function setDocumentTemplateId($documentTemplateId);
+
+    /**
+     * @return string
+     */
+    public function getCreatedAt();
+
+    /**
+     * @param string $createdAt
+     */
+    public function setCreatedAt($createdAt);
+
+    /**
+     * @return string
+     */
+    public function getUpdatedAt();
+
+    /**
+     * @param string $updatedAt
+     */
+    public function setUpdatedAt($updatedAt);
 }

@@ -67,6 +67,15 @@ class AccessToken implements AccessTokenInterface
     "created_at":    1569565521
   }
          */
+
+        return [
+            'access_token' => $this->accessToken,
+            'token_type' => $this->tokenType,
+            'expires_in' => $this->expiresIn,
+            'refresh_token' => $this->refreshToken,
+            'scope' => $this->scope,
+            'created_at' => $this->createdAt,
+        ];
     }
 
     /**
@@ -182,7 +191,7 @@ class AccessToken implements AccessTokenInterface
   }
          */
 
-        $token = new static();
+        $token = static::generateNewInstance();
         $token->setAccessToken($accessTokenArray['access_token']);
         $token->setTokenType($accessTokenArray['token_type']);
         $token->setExpiresIn($accessTokenArray['expires_in']);
@@ -191,5 +200,13 @@ class AccessToken implements AccessTokenInterface
         $token->setCreatedAt($accessTokenArray['created_at']);
 
         return $token;
+    }
+
+    /**
+     * @return AccessTokenInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
     }
 }

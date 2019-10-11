@@ -33,13 +33,13 @@ namespace Chance\CitrixRightSignature;
 
 // https://api.rightsignature.com/documentation/resources/v1/sending_requests/uploaded.en.html
 
-use BlueBurro\DocumentAssembly\CoreBundle\Model\Entity\FieldInterface;
 use Chance\CitrixRightSignature\SendingRequest\DocumentInterface;
+use Chance\CitrixRightSignature\SendingRequest\FileInterface;
 
 class OneOffDocumentRequest implements OneOffDocumentRequestInterface
 {
     /**
-     * @var FieldInterface
+     * @var FileInterface
      */
     private $file;
 
@@ -52,6 +52,38 @@ class OneOffDocumentRequest implements OneOffDocumentRequestInterface
      * @var SendingRequestInterface
      */
     private $sendingRequest;
+
+    /**
+     * @return FileInterface
+     */
+    public function getFile()
+    {
+        return $this->file;
+    }
+
+    /**
+     * @param FileInterface $file
+     */
+    public function setFile(FileInterface $file)
+    {
+        $this->file = $file;
+    }
+
+    /**
+     * @return DocumentInterface
+     */
+    public function getDocument()
+    {
+        return $this->document;
+    }
+
+    /**
+     * @param DocumentInterface $document
+     */
+    public function setDocument(DocumentInterface $document)
+    {
+        $this->document = $document;
+    }
 
     /*
      * {
@@ -86,12 +118,29 @@ class OneOffDocumentRequest implements OneOffDocumentRequestInterface
         // TODO: Implement jsonSerialize() method.
         // maybe get fancy in the future and use inflector (https://github.com/doctrine/inflector) with reflection to create the array.
 
-        $encodedSendingRequest = ($this->sendingRequest instanceof SendingRequestInterface) ? json_encode($this->sendingRequest) : '{}';
+        $encodedSendingRequest = ($this->sendingRequest instanceof SendingRequestInterface) ? $this->sendingRequest->jsonSerialize() : new \stdClass();
 
         return [
-            'file' => json_encode($this->file),
-            'document'  => json_encode($this->document),
+            'file' => $this->file->jsonSerialize(),
+            'document'  => $this->document->jsonSerialize(),
             'sendingRequest' => $encodedSendingRequest,
         ];
+    }
+
+    public static function createOneOffDocumentRequest(FileInterface $file, DocumentInterface $document)
+    {
+        $oneOffDocument = static::generateNewInstance();
+        $oneOffDocument->setFile($file);
+        $oneOffDocument->setDocument($document);
+
+        return $oneOffDocument;
+    }
+
+    /**
+     * @return OneOffDocumentRequestInterface
+     */
+    public static function generateNewInstance()
+    {
+        return new static();
     }
 }

@@ -31,8 +31,11 @@
 
 namespace Chance\CitrixRightSignature;
 
+use Chance\CitrixRightSignature\Exception\ClientException;
+use Chance\CitrixRightSignature\Token\AccessToken;
 use Chance\CitrixRightSignature\Token\AccessTokenInterface;
 use Chance\CitrixRightSignature\Token\OauthCodeRequest;
+use Symfony\Component\HttpFoundation\Response;
 
 class Client implements CitrixRightSignatureClientInterface
 {
@@ -134,10 +137,29 @@ class Client implements CitrixRightSignatureClientInterface
 
     // https://api.rightsignature.com/documentation/resources
 
-    // todo get auth token via GET /oauth/token
+    /**
+     * @return string
+     * @throws ClientException
+     */
+    public function getAuthCodeRequestUri()
+    {
+        $this->validateClientGrantState();
 
+        $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
+
+        $httpBuildQuery = http_build_query($grantRequest->getFormData('auth'));
+
+        return self::BASE_URL . OauthCodeRequest::GRANT_ENDPOINT . '?' . $httpBuildQuery;
+    }
+
+    /**
+     * @return string uri to redirect to request a auth code
+     * @throws ClientException
+     */
     public function getGrantRequestUri()
     {
+        $this->validateClientGrantState();
+
         $grantRequest = OauthCodeRequest::createAuthRequest($this->clientId, $this->clientSecret, $this->redirectUri);
 
         $httpBuildQuery = http_build_query($grantRequest->getFormData('grant'));
@@ -146,14 +168,16 @@ class Client implements CitrixRightSignatureClientInterface
 
     }
 
-    // todo request access token via POST /oauth/token
-
     /**
+     * using a auth code, make a request to get an access token
+     *
      * @param $code
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
      */
     public function requestAccessToken($code)
     {
+        $this->validateClientGrantState();
         /**
          * curl -F grant_type=authorization_code \
         -F client_id=CLIENT_ID \
@@ -166,23 +190,307 @@ class Client implements CitrixRightSignatureClientInterface
 
         $grantRequest->setCode($code);
 
-        $uri = self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
+        $uri = $this->getFullTokenUri();
         $formData = $grantRequest->getFormData('access');
 
-        $a = 1;
-
         return $this->guzzleClient->post($uri, [
-            'form_params' => $formData,
+            'json' => $formData,
         ]);
     }
 
-    // todo refresh access token
+    /**
+     * @param AccessTokenInterface $accessToken
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function requestRefreshToken(AccessTokenInterface $accessToken)
+    {
+        $this->validateClientBaseState();
+
+        $uri = $this->getFullTokenUri();
+
+        $refreshRequest = OauthCodeRequest::createRefreshRequest($this->clientId, $this->clientSecret, $accessToken);
+        $refreshRequest->setGrantType('refresh');
+
+        $formData = $refreshRequest->getFormData('refresh');
+
+        return $this->guzzleClient->post($uri, [
+            'json' => $formData,
+        ]);
+    }
+
+    /**
+     * convenience function to request a refreshed access token, set the returned token to the client and return the token for any further manipulation
+     *
+     * @return AccessTokenInterface
+     * @throws ClientException
+     */
+    public function refreshAccessToken()
+    {
+        $this->validateClientAccessState();
+
+        $response = $this->requestRefreshToken($this->accessToken);
+
+        switch ($response->getStatusCode()) {
+            case Response::HTTP_FORBIDDEN:
+                break;
+            case Response::HTTP_OK:
+                $body = $response->getBody();
+                $responseArray = json_decode($body, true);
+                $accessToken = AccessToken::createFromApiResponse($responseArray);
+                $this->accessToken = $accessToken;
+                return $accessToken;
+                break;
+            default:
+                throw ClientException::createUnexpectedStatusCodeException($response);
+                break;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullTokenUri()
+    {
+        return self::BASE_URL . OauthCodeRequest::TOKEN_ENDPOINT;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullRevokeTokenUri()
+    {
+        return self::BASE_URL . OauthCodeRequest::REVOKE_ENDPOINT;
+    }
 
     // todo revoke token
+
+    /**
+     * @param AccessTokenInterface $accessToken
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     */
+    public function requestRevokeToken(AccessTokenInterface $accessToken)
+    {
+        $this->validateClientBaseState();
+
+        $uri = $this->getFullRevokeTokenUri();
+
+        return $this->guzzleClient->post($uri, [
+            'json' => [
+                'token' => $accessToken->getAccessToken(),
+            ],
+            'auth' => [
+                $this->clientId,
+                $this->clientSecret,
+            ],
+        ]);
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function revokeAccessToken()
+    {
+        $this->validateClientAccessState();
+
+        $response = $this->requestRevokeToken($this->accessToken);
+
+        switch ($response->getStatusCode()) {
+            case Response::HTTP_FORBIDDEN:
+                throw ClientException::createUnauthorizedException($response);
+                break;
+            case Response::HTTP_OK:
+                $this->accessToken = null;
+                return true;
+                break;
+            default:
+                throw ClientException::createUnexpectedStatusCodeException($response);
+                break;
+        }
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientAccessState()
+    {
+        $this->validateClientBaseState();
+
+        if (!$this->accessToken instanceof AccessTokenInterface) {
+            throw ClientException::createMissingAccessTokenException();
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientBaseState()
+    {
+        if (!is_string($this->clientId)) {
+            throw ClientException::createMissingClientIdException();
+        }
+
+        if (!is_string($this->clientSecret)) {
+            throw ClientException::createMissingClientSecretException();
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateClientGrantState()
+    {
+        $this->validateClientBaseState();
+
+        if (!is_string($this->redirectUri)) {
+            throw ClientException::createMissingRedirectException();
+        }
+
+        return true;
+    }
 
     // https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
 
     // todo create sending request (upload)
 
+    /**
+     * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     * @throws \GuzzleHttp\Exception\ClientException
+     */
+    public function requestUploadUri(OneOffDocumentRequestInterface $oneOffDocumentRequest)
+    {
+        $this->validateClientAccessState();
+
+        $uri = self::BASE_URL . OneOffDocumentRequest::BASE_ENDPOINT;
+        $formData = $oneOffDocumentRequest->jsonSerialize();
+
+        // json seems to work so access_token doesn't need to be sent as form_params
+        $formData['access_token'] = $this->accessToken->getAccessToken();
+
+        return $this->guzzleClient->post($uri, [
+            'json' => $formData,
+        ]);
+    }
+
+    /**
+     * @param SendingRequestInterface $sendingRequest
+     * @param $filePath
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function requestUpload(SendingRequestInterface $sendingRequest, $filePath)
+    {
+        $this->validateClientAccessState();
+        $this->validateFile($filePath);
+
+        // PUT the file into sendingRequest's uploadUri value
+        $uri = $sendingRequest->getUploadUrl();
+
+        // upload is to amazon and they have a key/sig already in the uploadUri so no access key needs to be sent with this request
+
+        // using mult-part form doesn't work but according to google, this will achieve the same thing as we want to do with curl commands.
+        // https://stackoverflow.com/questions/52005604/rewrite-curl-with-guzzle-file-upload-php
+        return $this->guzzleClient->request('PUT', $uri, [
+            'body' => file_get_contents($filePath),
+            'headers' => [
+                'Content-Type' => 'application/pdf',
+            ]
+        ]);
+    }
+
+    /**
+     * @param $filePath
+     * @return bool
+     * @throws ClientException
+     */
+    public function validateFile($filePath)
+    {
+        if (!is_file($filePath)) {
+            throw ClientException::createFileNotFoundException($filePath);
+        }
+
+        return true;
+    }
+
     // todo trigger RS document stuff via uploaded
+
+    /**
+     * @param SendingRequestInterface $sendingRequest
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function requestUploadedRequest(SendingRequestInterface $sendingRequest)
+    {
+        $uriPath = str_replace(':id', $sendingRequest->getId(), OneOffDocumentRequest::UPLOADED_ENDPOINT);
+
+        $uri = self::BASE_URL . $uriPath;
+
+        return $this->guzzleClient->post($uri, [
+            'form_params' => [
+                'access_token' => $this->accessToken->getAccessToken(),
+            ],
+        ]);
+    }
+
+    /**
+     * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
+     * @param $filePath
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws ClientException
+     * @throws \GuzzleHttp\Exception\ClientException
+     */
+    public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath)
+    {
+        $uploadRequestResponse = $this->requestUploadUri($oneOffDocumentRequest);
+
+        switch (($uploadRequestResponse->getStatusCode())) {
+            case Response::HTTP_BAD_REQUEST:
+                // todo throw exception
+                break;
+            case Response::HTTP_UNAUTHORIZED:
+                // todo throw exception
+                break;
+            case Response::HTTP_UNPROCESSABLE_ENTITY:
+                // todo throw exception
+                break;
+            case Response::HTTP_NOT_FOUND:
+                // todo throw exception
+                break;
+            case Response::HTTP_OK:
+                // no break
+            default:
+                $body = $uploadRequestResponse->getBody();
+                $aSendingRequest = json_decode($body, true);
+
+                // see https://api.rightsignature.com/documentation/resources/v1/sending_requests/create.en.html
+                $sendingRequest = SendingRequest::createFromApiResponse($aSendingRequest['sending_request']);
+
+                // request uploaded triger using sending request response
+                $putFileResponse = $this->requestUpload($sendingRequest, $filePath);
+                // todo handle put file response
+                switch ($putFileResponse->getStatusCode()) {
+                    case Response::HTTP_OK:
+                        // no break
+                    default:
+                        $body = $putFileResponse->getBody();
+                        $contents = $body->getContents();
+                    break;
+                }
+
+                // finally, trigger the uploaded stuff as documented by API resources
+                return $this->requestUploadedRequest($sendingRequest);
+                break;
+        }
+    }
 }
