@@ -388,28 +388,24 @@ class Client implements CitrixRightSignatureClientInterface
      * @param $filePath
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function requestUpload(SendingRequestInterface $sendingRequest, $filePath)
     {
         $this->validateClientAccessState();
         $this->validateFile($filePath);
 
-        $fileName = pathinfo($filePath, PATHINFO_BASENAME);
-
         // PUT the file into sendingRequest's uploadUri value
         $uri = $sendingRequest->getUploadUrl();
 
         // upload is to amazon and they have a key/sig already in the uploadUri so no access key needs to be sent with this request
-        return $this->guzzleClient->put($uri,[
-            'multipart' => [
-                [
-                    'name' => 'file',
-                    'contents' => file_get_contents($filePath),
-                    'filename' => $fileName,
-                    'headers' => [
-                        'Content-Type' => 'application/pdf',
-                    ]
-                ],
+
+        // using mult-part form doesn't work but according to google, this will achieve the same thing as we want to do with curl commands.
+        // https://stackoverflow.com/questions/52005604/rewrite-curl-with-guzzle-file-upload-php
+        return $this->guzzleClient->request('PUT', $uri, [
+            'body' => file_get_contents($filePath),
+            'headers' => [
+                'Content-Type' => 'application/pdf',
             ]
         ]);
     }
