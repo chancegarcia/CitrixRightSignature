@@ -13,5 +13,10 @@
             "name": "chance garcia",
             "email": "develop@chancegarcia.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "Chance\\CitrixRightSignature\\": "src"
+        }
+    }
 }
