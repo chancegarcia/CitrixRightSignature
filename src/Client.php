@@ -388,6 +388,7 @@ class Client implements CitrixRightSignatureClientInterface
      * @param $filePath
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
+     * @throws \GuzzleHttp\Exception\ClientException
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function requestUpload(SendingRequestInterface $sendingRequest, $filePath)
@@ -448,7 +449,7 @@ class Client implements CitrixRightSignatureClientInterface
      * @param $filePath
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \GuzzleHttp\Exception\ClientException
      */
     public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath)
     {
