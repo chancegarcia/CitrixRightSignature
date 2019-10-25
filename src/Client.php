@@ -403,10 +403,14 @@ class Client implements CitrixRightSignatureClientInterface
 
         // using mult-part form doesn't work but according to google, this will achieve the same thing as we want to do with curl commands.
         // https://stackoverflow.com/questions/52005604/rewrite-curl-with-guzzle-file-upload-php
+
+        // todo get mime-type for filepath
+        $mimeType = mime_content_type($filePath);
+
         return $this->guzzleClient->request('PUT', $uri, [
             'body' => file_get_contents($filePath),
             'headers' => [
-                'Content-Type' => 'application/pdf',
+                'Content-Type' => mime_content_type($filePath),
             ]
         ]);
     }
