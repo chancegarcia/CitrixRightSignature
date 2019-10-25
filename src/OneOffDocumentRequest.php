@@ -115,7 +115,6 @@ class OneOffDocumentRequest implements OneOffDocumentRequestInterface
      */
     public function jsonSerialize()
     {
-        // TODO: Implement jsonSerialize() method.
         // maybe get fancy in the future and use inflector (https://github.com/doctrine/inflector) with reflection to create the array.
 
         $encodedSendingRequest = ($this->sendingRequest instanceof SendingRequestInterface) ? $this->sendingRequest->jsonSerialize() : new \stdClass();
