@@ -32,6 +32,8 @@
 namespace Chance\CitrixRightSignature;
 
 use Chance\CitrixRightSignature\Exception\ClientException;
+use Chance\CitrixRightSignature\Options\UploadedRequestOptions;
+use Chance\CitrixRightSignature\Options\UploadedRequestOptionsInterface;
 use Chance\CitrixRightSignature\Token\AccessToken;
 use Chance\CitrixRightSignature\Token\AccessTokenInterface;
 use Chance\CitrixRightSignature\Token\OauthCodeRequest;
@@ -429,34 +431,51 @@ class Client implements CitrixRightSignatureClientInterface
         return true;
     }
 
-    // todo trigger RS document stuff via uploaded
-
     /**
      * @param SendingRequestInterface $sendingRequest
+     * @param UploadedRequestOptions|null $options
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function requestUploadedRequest(SendingRequestInterface $sendingRequest)
+    public function requestUploadedRequest(SendingRequestInterface $sendingRequest, UploadedRequestOptions $options = null)
     {
         $uriPath = str_replace(':id', $sendingRequest->getId(), OneOffDocumentRequest::UPLOADED_ENDPOINT);
 
         $uri = self::BASE_URL . $uriPath;
 
+        $formParams = [
+            'access_token' => $this->accessToken->getAccessToken(),
+        ];
+
+        if ($options instanceof UploadedRequestOptionsInterface) {
+            $formParams = array_merge($formParams, $options->jsonSerialize());
+        }
+
+        // json seems to work so prepare_document doesn't need to be sent as form_params
         return $this->guzzleClient->post($uri, [
-            'form_params' => [
-                'access_token' => $this->accessToken->getAccessToken(),
-            ],
+            'json' => $formParams,
         ]);
     }
 
     /**
      * @param OneOffDocumentRequestInterface $oneOffDocumentRequest
      * @param $filePath
+     * @param array $options
      * @return \Psr\Http\Message\ResponseInterface
      * @throws ClientException
-     * @throws \GuzzleHttp\Exception\ClientException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath)
+    public function upload(OneOffDocumentRequestInterface $oneOffDocumentRequest, $filePath, array $options = [])
     {
+        $uploadedRequestOptions = null;
+        foreach ($options as $option) {
+            if ($option instanceof UploadedRequestOptions) {
+                $uploadedRequestOptions = $option;
+                break;
+            }
+
+            // todo create and check for upload uri options and upload options
+        }
+
         $uploadRequestResponse = $this->requestUploadUri($oneOffDocumentRequest);
 
         switch (($uploadRequestResponse->getStatusCode())) {
@@ -488,13 +507,14 @@ class Client implements CitrixRightSignatureClientInterface
                     case Response::HTTP_OK:
                         // no break
                     default:
-                        $body = $putFileResponse->getBody();
-                        $contents = $body->getContents();
+                        // $body = $putFileResponse->getBody();
+                        // $contents = $body->getContents();
+                        // todo add logger and log this
                     break;
                 }
 
                 // finally, trigger the uploaded stuff as documented by API resources
-                return $this->requestUploadedRequest($sendingRequest);
+                return $this->requestUploadedRequest($sendingRequest, $uploadedRequestOptions);
                 break;
         }
     }
